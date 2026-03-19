@@ -1,6 +1,7 @@
 package dev.csse.ctran156.recall.ui
 
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -24,10 +25,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import dev.csse.ctran156.recall.Bookmark
 import dev.csse.ctran156.recall.data.BookmarkEntity
@@ -49,24 +54,23 @@ sealed class Routes {
 @Composable
 fun RecallApp(
     viewModel: RecallViewModel = viewModel<RecallViewModel>(factory = RecallViewModel.Factory),
-    sharedSubject: String?,
-    sharedText: String?
+    navController: NavHostController = rememberNavController()
 ) {
     var showConfirmationDialog by rememberSaveable { mutableStateOf(false) }
     var showBookmarkDialog by rememberSaveable { mutableStateOf(false) }
-    val navController = rememberNavController()
+//    val navController = rememberNavController()
 
-    LaunchedEffect(Unit) {
-        if (!sharedText.isNullOrBlank()) {
-            showBookmarkDialog = true
-//            navController.navigate(
-//                Routes.AddBookmark(
-//                    sharedSubject = sharedSubject,
-//                    sharedText = sharedText
-//                )
-//            )
-        }
-    }
+//    LaunchedEffect(Unit) {
+//        if (!sharedText.isNullOrBlank()) {
+//            showBookmarkDialog = true
+////            navController.navigate(
+////                Routes.AddBookmark(
+////                    sharedSubject = sharedSubject,
+////                    sharedText = sharedText
+////                )
+////            )
+//        }
+//    }
 
     NavHost(
         navController = navController, startDestination = Routes.BookmarkList
@@ -121,6 +125,7 @@ fun RecallApp(
                         onShareAction = {
                             if (bookmark != null) {
                                 val shareLink: String = viewModel.createShareLink()
+                                Log.d("LINK", shareLink)
 
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
@@ -133,7 +138,7 @@ fun RecallApp(
                                 }
 
                                 context.startActivity(
-                                    Intent.createChooser(intent, "Recall")
+                                    Intent.createChooser(intent, "Share")
                                 )
                             }
                         })
@@ -151,29 +156,24 @@ fun RecallApp(
                 }
             }
         }
-        composable<Routes.AddBookmark> { backStackEntry ->
-            val detail: Routes.AddBookmark = backStackEntry.toRoute()
+        composable(
+            route = "add?name={name}&uri={uri}",
+            deepLinks = listOf(navDeepLink { uriPattern = "recall://add?name={name}&uri={uri}" })
+        ) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name")
+            val uri = backStackEntry.arguments?.getString("uri")
 
-//            var initialName: String? = null
-//            var initialUri: String? = null
-//            var initialDescription: String? = null
-//            var initialTags: List<String>? = null
-//
-//            detail.sharedText?.let { encoded ->
-//                try {
-//                    val json = URLDecoder.decode(encoded, "UTF-8")
-//                    val sharedBookmark = Json.decodeFromString<ShareBookmark>(json)
-//                    initialName = sharedBookmark.name
-//                    initialUri = sharedBookmark.uri
-//                    initialDescription = sharedBookmark.description
-//                    initialTags = sharedBookmark.tags
-//                } catch (e: Exception) {
-//                    // handle error (invalid content)
-//                }
-//            }
-            showBookmarkDialog = true
+            Log.d("NAME", "$name")
+            Log.d("URI", "$uri")
 
-
+            if (uri != null) {
+                AddBookmarkDialog(
+                    modifier = Modifier.fillMaxSize(0.9f), viewModel = viewModel, onDismiss = {
+                        showBookmarkDialog = false
+                        navController.navigate(Routes.BookmarkList)
+                    }, initialName = name, initialUri = uri
+                )
+            }
         }
     }
 
@@ -190,8 +190,6 @@ fun RecallApp(
             modifier = Modifier.fillMaxSize(0.9f),
             viewModel = viewModel,
             onDismiss = { showBookmarkDialog = false },
-            initialName = sharedSubject,
-            initialUri = sharedText
         )
     }
 }

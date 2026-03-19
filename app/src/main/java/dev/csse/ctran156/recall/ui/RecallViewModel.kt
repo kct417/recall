@@ -1,5 +1,6 @@
 package dev.csse.ctran156.recall.ui
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -163,7 +164,9 @@ class RecallViewModel(val bookmarkRepo: BookmarkRepository) : ViewModel() {
             .firstOrNull { it.startsWith("http") }
             ?: uiState.value.uris.firstOrNull()?.uri
 
-        return "$firstUri"
+        val name = uiState.value.selected?.name
+
+        return "recall://add?name=$name&uri=$firstUri"
     }
 
 }

@@ -57,8 +57,8 @@ fun AddBookmarkDialog(
     modifier: Modifier = Modifier,
     viewModel: RecallViewModel = viewModel<RecallViewModel>(factory = RecallViewModel.Factory),
     onDismiss: () -> Unit,
-    initialName: String?,
-    initialUri: String?
+    initialName: String? = "",
+    initialUri: String? = ""
 ) {
     var name by rememberSaveable { mutableStateOf(initialName?.removePrefix("Sharing ") ?: "") }
     var uri by rememberSaveable { mutableStateOf(initialUri  ?: "") }
